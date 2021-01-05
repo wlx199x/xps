@@ -2,17 +2,22 @@ import { EventEmitter } from "events"
 import { Socket } from "net"
 import { Pipe } from "./Pipe"
 import { Packer } from "./Packer"
-import { Push } from "./Push"
+import { IPush, newPush } from "./Notify"
+import { News } from "./News"
 
-class Clinet extends EventEmitter {
+class Client {
+    private static uqid = 0
+
+    private _id: number
     private _pipe: Pipe
+    private _event = new EventEmitter()
 
-    get uuid() { return this._pipe.uuid }
+    get id() { return this._id }
 
     constructor(pipe: Pipe) {
-        super()
+        this._id = ++Client.uqid
         this._pipe = pipe
-        this._pipe.on("notify", (data: Buffer) => { this.onNotify(data) })
+        this._pipe.onNews((news: News) => { this.onNews(news) })
     }
 
     async connect(port: number) {
@@ -32,15 +37,20 @@ class Clinet extends EventEmitter {
         return await this._pipe.request(data)
     }
 
-    private onNotify(data: Buffer) {
-        const push = new Push(data)
-        this.emit("push", push)
+    onPush(listener: (push: IPush) => void) {
+        this._event.on("push", listener)
+    }
+
+    private onNews(news: News) {
+        this._event.emit("push", newPush(this.id, news))
     }
 }
+
+export type IClient = Client
 
 export function newClient() {
     const packer = new Packer()
     const socket = new Socket()
     const pipe = new Pipe(packer, socket)
-    return new Clinet(pipe)
+    return new Client(pipe)
 }

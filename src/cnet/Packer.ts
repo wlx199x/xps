@@ -11,7 +11,7 @@ export class Packer extends EventEmitter {
         super()
         this._sender = new Sender()
         this._receiver = new Receiver()
-        this._receiver.on("news", (buff: Buffer) => { this.emit("news", buff) })
+        this._receiver.on("pack", (buff: Buffer) => { this.emit("pack", buff) })
     }
 
     bind(socket: Socket) {
@@ -51,7 +51,7 @@ class Receiver extends Writable {
 
         if (this._rsize == end) {
             const buff = this._buffs[0].slice(this._hsize)
-            this.emit("news", buff)
+            this.emit("pack", buff)
             this._rsize = 0
             this._bsize = 0
             this._buffs = []
@@ -61,7 +61,7 @@ class Receiver extends Writable {
 
         do {
             const buff = this._buffs[0].slice(this._hsize, end)
-            this.emit("news", buff)
+            this.emit("pack", buff)
             this._buffs[0] = this._buffs[0].slice(end)
             this._rsize = this._buffs[0].length
             this._bsize = 0

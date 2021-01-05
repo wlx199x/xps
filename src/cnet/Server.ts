@@ -1,17 +1,16 @@
 import { EventEmitter } from "events"
 import * as net from "net"
 import { newLink, ILink } from "./Link"
-import { Request } from "./Request"
-import { Notify } from "./Notify"
+import { IRequest } from "./Request"
+import { INotify } from "./Notify"
 
-export class Server extends EventEmitter {
+export class Server {
     private _net = new net.Server()
-    private _links = new Map<string, ILink>()
+    private _event = new EventEmitter()
+    private _links = new Map<number, ILink>()
 
     constructor() {
-        super()
         this._net.on("connection", (socket: net.Socket) => { this.onConnection(socket) })
-
     }
 
     async boot(port: number) {
@@ -27,12 +26,19 @@ export class Server extends EventEmitter {
         }
     }
 
+    onRequest(listener: (req: IRequest) => void) {
+        this._event.on("request", listener)
+    }
+
+    onNotify(listener: (nty: INotify) => void) {
+        this._event.on("notify", listener)
+    }
+
     private onConnection(socket: net.Socket) {
         const link = newLink(socket)
-        link.on("request", (req: Request) => { this.emit("request", req) })
-        link.on("notify", (nty: Notify) => { this.emit("notify", nty) })
+        link.onRequest((req: IRequest) => { this._event.emit("request", req) })
+        link.onNotify((nty: INotify) => { this._event.emit("notify", nty) })
         link.bind()
-        this._links.set(link.uuid, link)
-        this.emit("client", link)
+        this._links.set(link.id, link)
     }
 }

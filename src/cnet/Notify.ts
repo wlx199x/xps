@@ -1,15 +1,24 @@
-import { ILink } from "./Link"
+import { News } from "./News"
 
-export class Notify {
-    private _link: ILink
-    private _data: Buffer
+class Notify {
+    private _id: number
+    private _news: News
 
-    constructor(link: ILink, data: Buffer) {
-        this._link = link
-        this._data = data
+    constructor(id: number, news: News) {
+        this._id = id
+        this._news = news
     }
 
     data() {
-        return this._data.toString()
+        return this._news.data as Buffer
     }
+}
+
+export type IPush = Notify
+export type INotify = Notify
+export function newNotify(id: number, news: News) {
+    return new Notify(id, news) as INotify
+}
+export function newPush(id: number, news: News) {
+    return new Notify(id, news) as IPush
 }
